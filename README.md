@@ -2,9 +2,6 @@
 
 Relatório de indicadores de negócio para a Northwind Traders, uma loja fictícia de alimentos, bebidas e utilidades domésticas, construído a partir do clássico dataset Northwind um exercício de modelagem analítica e geração de insights de negócio a partir de dados relacionais brutos.
 
-📄 **[Relatório final (PDF)](./Relatorio_Northwind_Luciana_Simioni.pdf)**
-📊 **[Planilha completa com dados e fórmulas](./northwind_analise.xlsx)**
-
 ---
 
 ## Contexto
