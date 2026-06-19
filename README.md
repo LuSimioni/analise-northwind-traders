@@ -1,6 +1,6 @@
 # Análise Northwind Traders
 
-Relatório de indicadores de negócio para a Northwind Traders, uma loja fictícia de alimentos, bebidas e utilidades domésticas, construído a partir do clássico dataset Northwind — um exercício de modelagem analítica e geração de insights de negócio a partir de dados relacionais brutos.
+Relatório de indicadores de negócio para a Northwind Traders, uma loja fictícia de alimentos, bebidas e utilidades domésticas, construído a partir do clássico dataset Northwind um exercício de modelagem analítica e geração de insights de negócio a partir de dados relacionais brutos.
 
 📄 **[Relatório final (PDF)](./Relatorio_Northwind_Luciana_Simioni.pdf)**
 📊 **[Planilha completa com dados e fórmulas](./northwind_analise.xlsx)**
@@ -9,22 +9,21 @@ Relatório de indicadores de negócio para a Northwind Traders, uma loja fictíc
 
 ## Contexto
 
-A Northwind Traders é uma empresa fictícia com ~30 funcionários e faturamento mensal de ~R$1,5M, com clientes e fornecedores distribuídos em diversos países. O objetivo deste projeto foi simular um cenário comum em empresas em crescimento: dados dispersos em tabelas transacionais isoladas, sem uma camada analítica que permita responder perguntas de negócio de forma consolidada.
+A Northwind Traders é uma empresa fictícia com 30 funcionários e faturamento mensal de R$1,5M, com clientes e fornecedores distribuídos em diversos países. O objetivo deste projeto foi simular um cenário comum em empresas em crescimento: dados dispersos em tabelas transacionais isoladas, sem uma camada analítica que permita responder perguntas de negócio de forma consolidada.
 
 A partir de 14 tabelas brutas no formato de um ERP típico, o objetivo foi construir um relatório de indicadores capaz de apoiar dois objetivos estratégicos comuns em varejo: **aumentar o ticket médio** e **reduzir o churn de clientes**.
 
 ## O problema de dados
 
-As tabelas fornecidas estavam na granularidade transacional típica de um sistema OLTP — cada uma representando uma entidade isolada (pedidos, itens de pedido, produtos, categorias, clientes), sem nenhuma camada analítica entre o banco e a análise. Isso significa que, antes de calcular qualquer indicador, foi necessário:
+As tabelas fornecidas estavam na granularidade transacional típica de um sistema OLTP cada uma representando uma entidade isolada (pedidos, itens de pedido, produtos, categorias, clientes), sem nenhuma camada analítica entre o banco e a análise. Isso significa que, antes de calcular qualquer indicador, foi necessário:
 
 - Decidir a granularidade correta de análise (item de pedido, pedido, ou cliente)
 - Relacionar 5 tabelas diferentes para obter cada métrica
-- Tratar inconsistências de tipo, duplicidade e dados ausentes
 - Criar campos derivados que nenhuma tabela tinha de forma direta (status de entrega, frequência de cliente, data quebrada em ano/mês/trimestre)
 
 ## Abordagem de modelagem
 
-Trabalhei com Google Sheets, mas a lógica aplicada é a mesma de uma camada de transformação em SQL — só que implementada com fórmulas. A estrutura ficou assim:
+Trabalhei com Google Sheets, mas a lógica aplicada é a mesma de uma camada de transformação em SQL só que implementada com fórmulas. A estrutura ficou assim:
 
 ```
 orders ──┐
@@ -34,13 +33,13 @@ categories ───────┤
 customers ────────┘
 ```
 
-**Tabelas-fonte** (`orders`, `orders_details`, `product`, `categories`, `customers`): mantidas como extraídas do ERP, sem alteração — equivalente a uma camada *staging*.
+**Tabelas-fonte** (`orders`, `orders_details`, `product`, `categories`, `customers`): mantidas como extraídas do ERP, sem alteração equivalente a uma camada *staging*.
 
-**Tabela `pedidos`**: uma única tabela analítica (*One Big Table*) na granularidade de item de pedido (2.155 linhas, uma por combinação `order_id` + `product_id`), construída cruzando as 5 tabelas-fonte. Essa foi a decisão de modelagem central do projeto — em vez de analisar cada tabela isoladamente, era necessário ter uma base só, na menor granularidade disponível, para poder agregar para qualquer nível depois (pedido, cliente, categoria, país, mês).
+**Tabela `pedidos`**: uma única tabela analítica (*One Big Table*) na granularidade de item de pedido (2.155 linhas, uma por combinação `order_id` + `product_id`), construída cruzando as 5 tabelas-fonte. Essa foi a decisão de modelagem central do projeto em vez de analisar cada tabela isoladamente, era necessário ter uma base só, na menor granularidade disponível, para poder agregar para qualquer nível depois (pedido, cliente, categoria, país, mês).
 
 ### Como os joins foram feitos
 
-Cada coluna de `pedidos` que vem de outra tabela usa `VLOOKUP` para trazer o dado pela chave correta — o equivalente funcional de um `LEFT JOIN` em SQL:
+Cada coluna de `pedidos` que vem de outra tabela usa `VLOOKUP` para trazer o dado pela chave correta o equivalente funcional de um `LEFT JOIN` em SQL:
 
 | Coluna | Lógica | Equivalente em SQL |
 |---|---|---|
@@ -55,14 +54,14 @@ O caso de `category_name` é o mais interessante: como a categoria não está na
 
 Além dos joins, várias colunas foram derivadas para viabilizar os indicadores do relatório:
 
-- **`total_item`** = `quantity × unit_price × (1 - discount)` — receita líquida por item, base de todo o cálculo de receita
-- **`total_pedido`** = soma de `total_item` por `order_id` — receita agregada ao nível de pedido
-- **`customer_frequency`** = contagem de pedidos por cliente — usado para identificar clientes recorrentes vs. esporádicos
+- **`total_item`** = `quantity × unit_price × (1 - discount)` receita líquida por item, base de todo o cálculo de receita
+- **`total_pedido`** = soma de `total_item` por `order_id` receita agregada ao nível de pedido
+- **`customer_frequency`** = contagem de pedidos por cliente usado para identificar clientes recorrentes vs. esporádicos
 - **`delivery_status`** = lógica condicional cruzando `shipped_date` x `required_date` → classifica em *On Time*, *Late* ou *Not Shipped*
-- **`freight_unico`** / **`delivery_status_unique`** = colunas de deduplicação — como `pedidos` está na granularidade de item, métricas que pertencem ao pedido (frete, status de entrega) apareceriam duplicadas em cada item; essas colunas zeram o valor exceto na primeira ocorrência de cada `order_id`, evitando double counting nas agregações
+- **`freight_unico`** / **`delivery_status_unique`** = colunas de deduplicação como `pedidos` está na granularidade de item, métricas que pertencem ao pedido (frete, status de entrega) apareceriam duplicadas em cada item; essas colunas zeram o valor exceto na primeira ocorrência de cada `order_id`, evitando double counting nas agregações
 - **`year`, `month`, `year_month`, `quarter`** = decomposição de `order_date` para permitir análise de série temporal
 
-Esse cuidado com deduplicação foi importante: como a granularidade da base é item-de-pedido, qualquer métrica que existe no nível de pedido (frete, atraso) precisa ser contada uma única vez por pedido — senão indicadores como "frete total" ficam inflados artificialmente.
+Esse cuidado com deduplicação foi importante: como a granularidade da base é item-de-pedido, qualquer métrica que existe no nível de pedido (frete, atraso) precisa ser contada uma única vez por pedido senão indicadores como "frete total" ficam inflados artificialmente.
 
 ## Indicadores construídos
 
